@@ -1,61 +1,125 @@
 #pragma once
 
+#include <algorithm>
+#include <array>
 #include <concepts>
 #include <memory>
-#include <type_traits>
 #include <variant>
 
-#include "Lifetime.hpp"
 #include "Overloaded.hpp"
 
 namespace utils {
 
+template <typename EmplacedType, typename Type>
+concept EmplacableType =
+    std::derived_from<EmplacedType, Type> || std::same_as<EmplacedType, Type>;
+
 template <typename Type, int Size>
-class SmallStorage final {
+class SmallStorage {
  public:
   SmallStorage() = default;
 
-  template <std::derived_from<Type> EmplacedType, typename... Args>
-  void emplace(Args&&... args) {
-    if (sizeof(EmplacedType) > Size) {
+  template <EmplacableType<Type> EmplacedType = Type, typename... Args>
+  SmallStorage& emplace(Args&&... args) {
+    if (sizeof(EmplacedType) > StackStorageSize) {
       storage_.template emplace<HeapStorage>(
           new EmplacedType(std::forward<Args>(args)...));
     } else {
       storage_.template emplace<StackStorage>(std::in_place_type<EmplacedType>,
                                               std::forward<Args>(args)...);
     }
+    return *this;
   }
 
-  Type* operator->() const {
+  Type* get() const {
     return std::visit(
         utils::Overloaded{
-            [](const std::monostate&) -> Type* { return nullptr; },
-            [](const auto& storage) -> Type* { return storage.operator->(); },
+            [](std::monostate) -> Type* { return nullptr; },
+            [](const auto& storage) -> Type* { return storage.get(); },
         },
         storage_);
   }
 
- private:
-  class StackStorage : public Lifetime<StackStorage> {
-   public:
-    static constexpr std::string_view getName() { return "StackStorage"; }
-    template <typename EmplacedType, typename... Args>
-    StackStorage(std::in_place_type_t<EmplacedType>, Args&&... args) {
-      std::construct_at(reinterpret_cast<EmplacedType*>(&storage_),
-                        std::forward<Args>(args)...);
+  Type* operator->() const {
+    if (empty()) {
+      throw std::runtime_error("Dereferencing empty SmallStorage");
     }
-    ~StackStorage() { std::destroy_at(reinterpret_cast<Type*>(&storage_)); }
-    StackStorage(const StackStorage&) = default;
-    StackStorage(StackStorage&&) = default;
-    StackStorage& operator=(const StackStorage&) = default;
-    StackStorage& operator=(StackStorage&&) = default;
-    Type* operator->() const { return reinterpret_cast<Type*>(&storage_); }
+    return get();
+  }
+
+  Type& operator*() const { return *operator->(); }
+
+  bool empty() const {
+    return std::visit(
+        utils::Overloaded{[](std::monostate) -> bool { return true; },
+                          [](const auto& storage) -> bool {
+                            return !storage.operator bool();
+                          }},
+        storage_);
+  }
+
+  void reset() {
+    std::visit(utils::Overloaded{[](std::monostate) {},
+                                 [](auto& storage) { storage.reset(); }},
+               storage_);
+  }
+
+  bool isStackAllocated() const {
+    return std::holds_alternative<StackStorage>(storage_) && !empty();
+  }
+  bool isHeapAllocated() const {
+    return std::holds_alternative<HeapStorage>(storage_) && !empty();
+  }
+
+ private:
+  using HeapStorage = std::unique_ptr<Type>;
+  // Set stack size to whichever is larger: the size of the heap storage or the
+  // size of the Size parameter minus the size of variant index.
+  static constexpr auto StackStorageSize =
+      std::max(sizeof(HeapStorage), Size - sizeof(std::size_t));
+
+  class StackStorage {
+   public:
+    template <EmplacableType<Type> EmplacedType, typename... Args>
+    StackStorage(std::in_place_type_t<EmplacedType>, Args&&... args) {
+      new (storage_.data()) EmplacedType(std::forward<Args>(args)...);
+    }
+    ~StackStorage() { reset(); }
+    StackStorage(const StackStorage&) = delete;
+    StackStorage(StackStorage&& other) noexcept {
+      if (!other) {
+        return;  // If other is empty, do nothing
+      }
+      new (storage_.data()) Type(std::move(*other.get()));
+      other.reset();
+    };
+    StackStorage& operator=(const StackStorage&) = delete;
+    StackStorage& operator=(StackStorage&& other) noexcept {
+      if (!other || this == &other) {
+        return *this;  // If other is empty or self-assignment, do nothing
+      }
+      reset();
+      new (storage_.data()) Type(std::move(*other.get()));
+      other.reset();
+      return *this;
+    };
+    Type* get() const { return reinterpret_cast<Type*>(storage_.data()); }
+    operator bool() const {
+      // Check for non-zero bytes.
+      return std::ranges::any_of(
+          storage_, [](std::byte b) -> bool { return b != std::byte{}; });
+    }
+    void reset() {
+      if (operator bool()) {
+        get()->~Type();
+        storage_.fill(std::byte{});
+      }
+    }
 
    private:
     // Make this mutable so it behaves like heap storage.
-    mutable std::aligned_storage_t<Size> storage_{};
+    mutable std::array<std::byte, StackStorageSize> storage_{};
   };
-  using HeapStorage = std::unique_ptr<Type>;
-  mutable std::variant<std::monostate, StackStorage, HeapStorage> storage_{};
+  std::variant<std::monostate, StackStorage, HeapStorage> storage_{};
 };
 }  // namespace utils

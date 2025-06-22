@@ -1,9 +1,8 @@
 #pragma once
 #include <functional>
-#include <string_view>
 #include <type_traits>
+#include <utility>
 
-#include "Lifetime.hpp"
 #include "SmallStorage.hpp"
 
 namespace utils {
@@ -15,42 +14,52 @@ template <typename...>
 class Function;
 
 template <typename Return, typename... Args>
-class Function<Return(Args...)> final
-    : public Lifetime<Function<Return(Args...)>> {
+class Function<Return(Args...)> {
  public:
-  static constexpr std::string_view getName() { return "Function"; }
-
   Function() = default;
 
   template <InvocableWith<Return, Args...> Func>
-  explicit Function(Func&& func)
-    requires(std::is_rvalue_reference_v<Func &&>)
-  {
-    callable_.template emplace<CallableDerived<Func>>(std::move(func));
+  explicit Function(Func&& func) {
+    using FuncType = std::remove_cvref_t<Func>;
+    callable_.template emplace<CallableDerived<FuncType>>(
+        std::forward<Func>(func));
+  }
+
+  Function(Return (*func)(Args...)) {
+    callable_.template emplace<CallableDerived<Return (*)(Args...)>>(func);
   }
 
   Return operator()(Args... args) const {
+    if (callable_.empty()) {
+      throw std::bad_function_call();
+    }
     return callable_->invoke(std::forward<Args>(args)...);
   }
 
  private:
-  class CallableBase : public Lifetime<CallableBase> {
+  class CallableBase {
    public:
-    static constexpr std::string_view getName() { return "CallableBase"; }
+    explicit CallableBase() = default;
+    explicit CallableBase(const CallableBase&) = default;
+    explicit CallableBase(CallableBase&&) = default;
+    CallableBase& operator=(const CallableBase&) = default;
+    CallableBase& operator=(CallableBase&&) = default;
+    virtual ~CallableBase() = default;
     virtual Return invoke(Args... args) = 0;
   };
-  template <InvocableWith<Return, Args...> Func>
-  class CallableDerived final : public CallableBase,
-                                public Lifetime<CallableDerived<Func>> {
+  template <InvocableWith<Return, Args...> FuncType>
+  class CallableDerived final : public CallableBase {
    public:
-    static constexpr std::string_view getName() { return "CallableDerived"; }
-    CallableDerived(Func&& func) : func_(std::move(func)) {}
+    template <InvocableWith<Return, Args...> FuncForwardType>
+    CallableDerived(FuncForwardType&& func)
+        : func_(std::forward<FuncForwardType>(func)) {}
+
     Return invoke(Args... args) override {
       return std::invoke(func_, std::forward<Args>(args)...);
     }
 
    private:
-    Func func_;
+    FuncType func_;
   };
 
   static constexpr int smallStorageSize = 64;

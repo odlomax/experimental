@@ -20,6 +20,6 @@ class Lifetime {
     std::cout << Derived::getName() << " move-assigned.\n";
     return *this;
   }
-  virtual ~Lifetime() { std::cout << Derived::getName() << " destructed.\n"; };
+  virtual ~Lifetime() { std::cout << Derived::getName() << " destroyed.\n"; };
 };
 }  // namespace utils
