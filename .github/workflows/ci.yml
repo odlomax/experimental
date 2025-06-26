@@ -50,8 +50,8 @@ jobs:
       - name: Run gcovr (coverage)
         run: |
           cd build
-          gcovr --root .. --xml -o coverage.xml
-          gcovr --root .. --html --html-details -o coverage.html
+          gcovr --root .. --filter ../src --xml -o coverage.xml
+          gcovr --root .. --filter ../src --html --html-details -o coverage.html
       - name: Upload coverage artifact
         uses: actions/upload-artifact@v4
         with:
