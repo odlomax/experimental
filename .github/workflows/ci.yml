@@ -33,3 +33,45 @@ jobs:
         run: cmake --build build
       - name: Test
         run: cd build && ctest --output-on-failure
+
+  build-intel:
+    runs-on: ubuntu-latest
+    name: Build and test with Intel oneAPI DPC++/C++
+    steps:
+      - uses: actions/checkout@v3
+      - name: Install Intel oneAPI DPC++/C++ Compiler
+        run: |
+          wget https://registrationcenter-download.intel.com/akdlm/irc_nas/tec/19115/l_BaseKit_p_2024.1.0.56456_offline.sh
+          chmod +x l_BaseKit_p_2024.1.0.56456_offline.sh
+          sudo ./l_BaseKit_p_2024.1.0.56456_offline.sh -a -s --eula accept
+          source /opt/intel/oneapi/setvars.sh
+      - name: Configure
+        run: source /opt/intel/oneapi/setvars.sh && cmake -S . -B build -DCMAKE_CXX_COMPILER=icpx
+      - name: Build
+        run: source /opt/intel/oneapi/setvars.sh && cmake --build build
+      - name: Test
+        run: source /opt/intel/oneapi/setvars.sh && cd build && ctest --output-on-failure
+  
+  coverage-gcc:
+    runs-on: ubuntu-latest
+    name: Coverage (GCC/gcov)
+    steps:
+      - uses: actions/checkout@v3
+      - name: Install dependencies
+        run: sudo apt-get update && sudo apt-get install -y cmake gcc g++ catch2 gcovr
+      - name: Configure
+        run: cmake -S . -B build -DCMAKE_CXX_COMPILER=g++ -DCMAKE_BUILD_TYPE=Debug -DCMAKE_CXX_FLAGS="--coverage"
+      - name: Build
+        run: cmake --build build
+      - name: Test
+        run: cd build && ctest --output-on-failure
+      - name: Run gcovr (coverage)
+        run: |
+          cd build
+          gcovr --root .. --xml -o coverage.xml
+          gcovr --root .. --html --html-details -o coverage.html
+      - name: Upload coverage artifact
+        uses: actions/upload-artifact@v3
+        with:
+          name: gcc-coverage-report
+          path: build/coverage.*
