@@ -71,7 +71,7 @@ jobs:
           gcovr --root .. --xml -o coverage.xml
           gcovr --root .. --html --html-details -o coverage.html
       - name: Upload coverage artifact
-        uses: actions/upload-artifact@v3
+        uses: actions/upload-artifact@v4
         with:
           name: gcc-coverage-report
           path: build/coverage.*
