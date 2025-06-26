@@ -23,18 +23,18 @@ TEST_CASE("utils::Function basic usage", "[Function]") {
   }
 
   SECTION("Function wraps lambda and calls correctly") {
-    Function<int(int)> f([](int x) { return x + 1; });
+    auto f = Function<int(int)>([](int x) { return x + 1; });
     REQUIRE(f(2) == 3);
     REQUIRE(f(10) == 11);
   }
 
   SECTION("Function wraps function pointer") {
-    Function<int(int)> f(add2);
+    auto f = Function<int(int)>(add2);
     REQUIRE(f(5) == 7);
   }
 
   SECTION("Function wraps mutable lambda") {
-    Function<int(int)> f([state = 0](int x) mutable {
+    auto f = Function<int(int)>([state = 0](int x) mutable {
       state += x;
       return state;
     });
@@ -43,9 +43,31 @@ TEST_CASE("utils::Function basic usage", "[Function]") {
   }
 
   SECTION("Function with multiple arguments") {
-    Function<std::string(const std::string&, int)> f(
+    auto f = Function<std::string(const std::string&, int)>(
         [](const std::string& s, int n) { return s + std::to_string(n); });
     REQUIRE(f("test", 42) == "test42");
+  }
+
+  SECTION("Struct member function") {
+    auto myStruct = MyStruct{};
+    auto f = Function<int(MyStruct&, int)>(&MyStruct::operator());
+    REQUIRE(f(myStruct, 4) == 7);  // 4 + 3 from MyStruct
+  }
+
+  SECTION("Struct member accessor") {
+    auto myStruct = MyStruct{};
+    auto f = Function<double(MyStruct&)>(&MyStruct::data);
+    REQUIRE(f(myStruct) == 3.0);  // Accessing data member
+  }
+
+  SECTION("Test move semantics") {
+    auto f = Function<int(int)>([](int x) { return x + 1; });
+    auto g = std::move(f);
+    auto h = Function<int(int)>{};
+    h = std::move(g);
+    REQUIRE_THROWS_AS(f(1), std::bad_function_call);  // f should be invalid
+    REQUIRE_THROWS_AS(g(1), std::bad_function_call);  // g should be invalid
+    REQUIRE(h(3) == 4);  // Ensure the moved function works
   }
 
   SECTION("Function with moved struct") {
@@ -74,5 +96,4 @@ TEST_CASE("utils::Function basic usage", "[Function]") {
             "MyStruct destroyed.\n"
             "MyStruct destroyed.\n");
   }
-
 }

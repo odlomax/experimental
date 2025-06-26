@@ -21,6 +21,7 @@ class SmallStorage {
 
   template <EmplacableType<Type> EmplacedType = Type, typename... Args>
   SmallStorage& emplace(Args&&... args) {
+    reset();
     if (sizeof(EmplacedType) > StackStorageSize) {
       storage_.template emplace<HeapStorage>(
           new EmplacedType(std::forward<Args>(args)...));
@@ -90,17 +91,14 @@ class SmallStorage {
       if (!other) {
         return;  // If other is empty, do nothing
       }
-      new (storage_.data()) Type(std::move(*other.get()));
-      other.reset();
+      transferOwnership(other);
     };
     StackStorage& operator=(const StackStorage&) = delete;
     StackStorage& operator=(StackStorage&& other) noexcept {
       if (!other || this == &other) {
         return *this;  // If other is empty or self-assignment, do nothing
       }
-      reset();
-      new (storage_.data()) Type(std::move(*other.get()));
-      other.reset();
+      transferOwnership(other);
       return *this;
     };
     Type* get() const { return reinterpret_cast<Type*>(storage_.data()); }
@@ -117,6 +115,11 @@ class SmallStorage {
     }
 
    private:
+    void transferOwnership(StackStorage& other) {
+      reset();
+      storage_ = other.storage_;
+      other.storage_.fill(std::byte{});
+    }
     // Make this mutable so it behaves like heap storage.
     mutable std::array<std::byte, StackStorageSize> storage_{};
   };

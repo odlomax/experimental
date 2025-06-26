@@ -1,0 +1,35 @@
+name: CI
+
+on:
+  push:
+    branches: [ "**" ]
+  pull_request:
+
+jobs:
+  build-gcc:
+    runs-on: ubuntu-latest
+    name: Build and test with GCC
+    steps:
+      - uses: actions/checkout@v3
+      - name: Install dependencies
+        run: sudo apt-get update && sudo apt-get install -y cmake gcc g++ catch2
+      - name: Configure
+        run: cmake -S . -B build -DCMAKE_CXX_COMPILER=g++
+      - name: Build
+        run: cmake --build build
+      - name: Test
+        run: cd build && ctest --output-on-failure
+
+  build-clang:
+    runs-on: ubuntu-latest
+    name: Build and test with Clang
+    steps:
+      - uses: actions/checkout@v3
+      - name: Install dependencies
+        run: sudo apt-get update && sudo apt-get install -y cmake clang g++ catch2
+      - name: Configure
+        run: cmake -S . -B build -DCMAKE_CXX_COMPILER=clang++
+      - name: Build
+        run: cmake --build build
+      - name: Test
+        run: cd build && ctest --output-on-failure
