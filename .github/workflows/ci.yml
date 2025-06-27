@@ -23,7 +23,7 @@ jobs:
       - name: Install dependencies
         run: sudo apt-get update && sudo apt-get install -y cmake gcc g++ catch2 gcovr
       - name: Configure
-        run: cmake -S . -B build -DCMAKE_CXX_COMPILER=g++ -DCMAKE_BUILD_TYPE=Debug
+        run: cmake -S . -B build -DCMAKE_CXX_COMPILER=g++ -DCMAKE_BUILD_TYPE=Debug -DCMAKE_CXX_FLAGS="--coverage"
       - name: Build
         run: cmake --build build
       - name: Test
@@ -31,8 +31,7 @@ jobs:
       - name: Run gcovr (coverage)
         run: |
           cd build
-          gcovr --root .. --filter ../src --html-details -o coverage.html
-          cd ..
+          gcovr --root .. --filter ../src --html-details coverage.html
       - name: Commit and push code coverage report
         env: 
           CC_COMMIT_MESSAGE: Add code coverage artifacts
