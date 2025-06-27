@@ -2,8 +2,11 @@ name: CI
 
 on:
   push:
-    branches: [ "**" ]
+    branches:
+      - main
   pull_request:
+    branches:
+      - main
 
 jobs:
   build-gcc-debug:
@@ -19,6 +22,17 @@ jobs:
         run: cmake --build build
       - name: Test
         run: cd build && ctest --output-on-failure
+      - name: Run gcovr (coverage)
+        run: |
+          cd build
+          gcovr --root .. --filter ../src --xml -o coverage.xml
+          gcovr --root .. --filter ../src --html --html-details -o coverage.html
+      - name: Push coverage report
+        run: |
+          cp build/coverage.*html coverage/ |
+          git add coverage/coverage.*html
+          git commit -m "Add coverage report"
+          git push
 
   build-gcc-release:
     runs-on: ubuntu-latest
@@ -33,16 +47,7 @@ jobs:
         run: cmake --build build
       - name: Test
         run: cd build && ctest --output-on-failure
-      - name: Run gcovr (coverage)
-        run: |
-          cd build
-          gcovr --root .. --filter ../src --xml -o coverage.xml
-          gcovr --root .. --filter ../src --html --html-details -o coverage.html
-      - name: Upload coverage artifact
-        uses: actions/upload-artifact@v4
-        with:
-          name: ${{ github.event.repository.name }}-gcc-coverage-report
-          path: build/coverage.*html
+
 
   build-clang-debug:
     runs-on: ubuntu-latest
