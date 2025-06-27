@@ -30,7 +30,7 @@ jobs:
       - name: Run gcovr (coverage)
         run: |
           cd build
-          gcovr --root .. --exclude ../tests --html-details coverage.html
+          gcovr --root .. --filter ../src --filter ../include --html-details coverage.html
       - name: Commit and push code coverage report
         env: 
           CI_COMMIT_MESSAGE: Add code coverage artifacts.
