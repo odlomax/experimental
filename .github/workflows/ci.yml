@@ -11,11 +11,10 @@ on:
       - main
     paths-ignore: 
       - 'coverage/**'
-
 jobs:
-  build-gcc-debug:
+  build-gcc-with-gcov:
     runs-on: ubuntu-latest
-    name: Build and test with GCC (Debug)
+    name: Build and test with GCC (with gcov)
     permissions:
       contents: write
     steps:
@@ -34,20 +33,34 @@ jobs:
           gcovr --root .. --filter ../src --html-details coverage.html
       - name: Commit and push code coverage report
         env: 
-          CC_COMMIT_MESSAGE: Add code coverage artifacts
-          CC_COMMIT_AUTHOR: Code Coverage Action
+          CI_COMMIT_MESSAGE: Add code coverage artifacts.
+          CI_COMMIT_AUTHOR: Continuous Integration Bot
         run: |
           mkdir -p coverage
           mv build/coverage.* coverage/
-          git config --global user.name "${{ env.CC_COMMIT_AUTHOR }}"
+          git config --global user.name "${{ env.CI_COMMIT_AUTHOR }}"
           git config --global user.email "o_d_lomax@users.noreply.github.com"
           git add coverage/*
-          git commit -m "${{ env.CC_COMMIT_MESSAGE }}"
+          git commit -m "${{ env.CI_COMMIT_MESSAGE }}"
           git fetch origin
           git rebase --strategy-option=theirs origin/main
           git push
-          git rebase --strategy-option=theirs origin/main
-          git push
+
+  build-gcc-debug:
+    runs-on: ubuntu-latest
+    name: Build and test with GCC (Debug)
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@v3
+      - name: Install dependencies
+        run: sudo apt-get update && sudo apt-get install -y cmake gcc g++ catch2
+      - name: Configure
+        run: cmake -S . -B build -DCMAKE_CXX_COMPILER=g++ -DCMAKE_BUILD_TYPE=Debug -DCMAKE_CXX_FLAGS="-fsanitize=address,undefined -fno-omit-frame-pointer"
+      - name: Build
+        run: cmake --build build
+      - name: Test
+        run: cd build && ctest --output-on-failure
 
   build-gcc-release:
     runs-on: ubuntu-latest
@@ -72,7 +85,7 @@ jobs:
       - name: Install dependencies
         run: sudo apt-get update && sudo apt-get install -y cmake clang g++ catch2
       - name: Configure
-        run: cmake -S . -B build -DCMAKE_CXX_COMPILER=clang++ -DCMAKE_BUILD_TYPE=Debug
+        run: cmake -S . -B build -DCMAKE_CXX_COMPILER=clang++ -DCMAKE_BUILD_TYPE=Debug -DCMAKE_CXX_FLAGS="-fsanitize=address,undefined -fno-omit-frame-pointer"
       - name: Build
         run: cmake --build build
       - name: Test
