@@ -3,7 +3,7 @@
 #include <array>
 #include <catch2/catch_all.hpp>
 
-#include "src/SmallStorage.hpp"
+#include "SmallStorage.hpp"
 
 using utils::SmallStorage;
 
@@ -34,6 +34,7 @@ TEST_CASE("SmallStorage empty state") {
   REQUIRE(storage.empty());
   REQUIRE_FALSE(storage.isStackAllocated());
   REQUIRE_FALSE(storage.isHeapAllocated());
+  REQUIRE(!storage.get());
 
   // Dereferencing an empty SmallStorage should throw
   REQUIRE_THROWS_AS(*storage, std::runtime_error);
@@ -62,6 +63,12 @@ TEST_CASE("SmallStorage move semantics") {
   REQUIRE(*storage == 100);
   REQUIRE(storage.isStackAllocated());
   REQUIRE(movedStorage.empty());
+
+  auto emptyStorage = SmallStorage<int, 64>{};
+  storage = std::move(emptyStorage);
+  REQUIRE(storage.empty());
+  auto anotherEmptyStorage = std::move(emptyStorage);
+  REQUIRE(anotherEmptyStorage.empty());
 }
 
 TEST_CASE("SmallStorage reset") {

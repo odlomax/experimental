@@ -2,9 +2,9 @@
 #include <catch2/catch_all.hpp>
 #include <string_view>
 
-#include "src/Function.hpp"
-#include "src/Lifetime.hpp"
-#include "src/RedirectCout.hpp"
+#include "Function.hpp"
+#include "Lifetime.hpp"
+#include "RedirectCout.hpp"
 
 using utils::Function;
 int add2(int x) { return x + 2; }

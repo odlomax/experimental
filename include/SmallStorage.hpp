@@ -88,14 +88,11 @@ class SmallStorage {
     ~StackStorage() { reset(); }
     StackStorage(const StackStorage&) = delete;
     StackStorage(StackStorage&& other) noexcept {
-      if (!other) {
-        return;  // If other is empty, do nothing
-      }
       transferOwnership(other);
     };
     StackStorage& operator=(const StackStorage&) = delete;
     StackStorage& operator=(StackStorage&& other) noexcept {
-      if (!other || this == &other) {
+      if (this == &other) {
         return *this;  // If other is empty or self-assignment, do nothing
       }
       transferOwnership(other);
