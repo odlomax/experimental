@@ -53,17 +53,25 @@ TEST_CASE("SmallStorage move semantics") {
   auto storage = SmallStorage<int, 64>{};
   storage.emplace(42);
 
+  // move constructor
   auto movedStorage = std::move(storage);
   REQUIRE(*movedStorage == 42);
   REQUIRE(movedStorage.isStackAllocated());
   REQUIRE(storage.empty());
 
+  // move assignment
   movedStorage.emplace(100);
   storage = std::move(movedStorage);
   REQUIRE(*storage == 100);
   REQUIRE(storage.isStackAllocated());
   REQUIRE(movedStorage.empty());
 
+  // moving into self should do nothing
+  storage = std::move(storage);
+  REQUIRE(*storage == 100);
+  REQUIRE(storage.isStackAllocated());
+
+  // move from empty storage
   auto emptyStorage = SmallStorage<int, 64>{};
   storage = std::move(emptyStorage);
   REQUIRE(storage.empty());
