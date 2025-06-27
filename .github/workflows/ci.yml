@@ -6,43 +6,29 @@ on:
   pull_request:
 
 jobs:
-  build-gcc:
+  build-gcc-debug:
     runs-on: ubuntu-latest
-    name: Build and test with GCC
+    name: Build and test with GCC (Debug)
     steps:
       - uses: actions/checkout@v3
       - name: Install dependencies
         run: sudo apt-get update && sudo apt-get install -y cmake gcc g++ catch2
       - name: Configure
-        run: cmake -S . -B build -DCMAKE_CXX_COMPILER=g++
+        run: cmake -S . -B build -DCMAKE_CXX_COMPILER=g++ -DCMAKE_BUILD_TYPE=Debug
       - name: Build
         run: cmake --build build
       - name: Test
         run: cd build && ctest --output-on-failure
 
-  build-clang:
+  build-gcc-release:
     runs-on: ubuntu-latest
-    name: Build and test with Clang
-    steps:
-      - uses: actions/checkout@v3
-      - name: Install dependencies
-        run: sudo apt-get update && sudo apt-get install -y cmake clang g++ catch2
-      - name: Configure
-        run: cmake -S . -B build -DCMAKE_CXX_COMPILER=clang++
-      - name: Build
-        run: cmake --build build
-      - name: Test
-        run: cd build && ctest --output-on-failure
-  
-  coverage-gcc:
-    runs-on: ubuntu-latest
-    name: Coverage (GCC/gcov)
+    name: Build and test with GCC (Release)
     steps:
       - uses: actions/checkout@v3
       - name: Install dependencies
         run: sudo apt-get update && sudo apt-get install -y cmake gcc g++ catch2 gcovr
       - name: Configure
-        run: cmake -S . -B build -DCMAKE_CXX_COMPILER=g++ -DCMAKE_BUILD_TYPE=Debug -DCMAKE_CXX_FLAGS="--coverage"
+        run: cmake -S . -B build -DCMAKE_CXX_COMPILER=g++ -DCMAKE_BUILD_TYPE=Release
       - name: Build
         run: cmake --build build
       - name: Test
@@ -55,5 +41,33 @@ jobs:
       - name: Upload coverage artifact
         uses: actions/upload-artifact@v4
         with:
-          name: gcc-coverage-report
-          path: build/coverage.*
+          name: ${{ github.event.repository.name }}-gcc-coverage-report
+          path: build/coverage.*html
+
+  build-clang-debug:
+    runs-on: ubuntu-latest
+    name: Build and test with Clang (Debug)
+    steps:
+      - uses: actions/checkout@v3
+      - name: Install dependencies
+        run: sudo apt-get update && sudo apt-get install -y cmake clang g++ catch2
+      - name: Configure
+        run: cmake -S . -B build -DCMAKE_CXX_COMPILER=clang++ -DCMAKE_BUILD_TYPE=Debug
+      - name: Build
+        run: cmake --build build
+      - name: Test
+        run: cd build && ctest --output-on-failure
+
+  build-clang-release:
+    runs-on: ubuntu-latest
+    name: Build and test with Clang (Release)
+    steps:
+      - uses: actions/checkout@v3
+      - name: Install dependencies
+        run: sudo apt-get update && sudo apt-get install -y cmake clang g++ catch2
+      - name: Configure
+        run: cmake -S . -B build -DCMAKE_CXX_COMPILER=clang++ -DCMAKE_BUILD_TYPE=Release
+      - name: Build
+        run: cmake --build build
+      - name: Test
+        run: cd build && ctest --output-on-failure
