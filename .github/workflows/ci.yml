@@ -32,9 +32,10 @@ jobs:
           CC_COMMIT_MESSAGE: Code coverage artifacts
           CC_COMMIT_AUTHOR: Code Coverage Action
         run: |
+          mv build/coverage/* ../coverage/
           git config --global user.name "${{ env.CC_COMMIT_AUTHOR }}"
           git config --global user.email "o_d_lomax@users.noreply.github.com"
-          git add docs
+          git add coverage/*
           git commit -m "${{ env.CC_COMMIT_MESSAGE }}"
           git fetch origin
           git rebase --strategy-option=theirs origin/main
