@@ -27,11 +27,17 @@ jobs:
           cd build
           gcovr --root .. --filter ../src --xml -o coverage.xml
           gcovr --root .. --filter ../src --html --html-details -o coverage.html
-      - name: Push coverage report
+      - name: Commit and push code coverage report
+        env: 
+          CC_COMMIT_MESSAGE: Code coverage artifacts
+          CC_COMMIT_AUTHOR: Code Coverage Action
         run: |
-          cp build/coverage.*html coverage/ |
-          git add coverage/coverage.*html
-          git commit -m "Add coverage report"
+          git config --global user.name "${{ env.CC_COMMIT_AUTHOR }}"
+          git config --global user.email "o_d_lomax@users.noreply.github.com"
+          git add docs
+          git commit -m "${{ env.CC_COMMIT_MESSAGE }}"
+          git fetch origin
+          git rebase --strategy-option=theirs origin/main
           git push
 
   build-gcc-release:
