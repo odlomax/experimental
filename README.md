@@ -4,4 +4,4 @@ This repository contains an experimental C++ project with automated CI workflows
 
 ## Code Coverage
 
-The latest gcov code coverage report is available [here](https://htmlpreview.github.io/?https://github.com/odlomax/experimental/blob/main/coverage/coverage.html).
+The latest code coverage report for the main branch is available [here](https://odlomax.github.io/experimental/coverage/coverage.html).
