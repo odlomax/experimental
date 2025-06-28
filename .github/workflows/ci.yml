@@ -5,16 +5,16 @@ on:
     branches:
       - main
     paths-ignore: 
-      - 'coverage/**'
+      - 'docs/**'
   pull_request:
     branches:
       - main
     paths-ignore: 
-      - 'coverage/**'
+      - 'docs/**'
 jobs:
   build-gcc-with-gcov:
     runs-on: ubuntu-latest
-    name: Build and test with GCC (with gcov)
+    name: Code coverage with gcov
     permissions:
       contents: write
     steps:
@@ -34,13 +34,14 @@ jobs:
       - name: Commit and push code coverage report
         env: 
           CI_COMMIT_MESSAGE: Add code coverage artifacts.
-          CI_COMMIT_AUTHOR: Continuous Integration Bot
+          CI_COMMIT_AUTHOR: CI Bot
         run: |
-          mkdir -p coverage
-          mv build/coverage.* coverage/
+          mkdir -p docs/coverage
+          rm -rf docs/coverage/*
+          mv build/coverage.* docs/coverage/
           git config --global user.name "${{ env.CI_COMMIT_AUTHOR }}"
-          git config --global user.email "o_d_lomax@users.noreply.github.com"
-          git add coverage/*
+          git config --global user.email "odlomax@users.noreply.github.com"
+          git add docs/coverage/*
           git commit -m "${{ env.CI_COMMIT_MESSAGE }}"
           git fetch origin
           git rebase --strategy-option=theirs origin/main
