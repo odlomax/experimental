@@ -24,7 +24,7 @@ jobs:
       - name: Install dependencies
         run: sudo apt-get update && sudo apt-get install -y clang-format
       - name: Format source files
-        run: find . -name '*.cpp' -o -name '*.hpp' | xargs clang-format -i
+        run: find . -name '*.cpp' -o -name '*.hpp' | xargs clang-format -i -style=file
       - name: Commit and push changes
         env: 
           CI_COMMIT_MESSAGE: Apply clang-format.
