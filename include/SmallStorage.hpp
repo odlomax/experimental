@@ -87,9 +87,7 @@ class SmallStorage {
     }
     ~StackStorage() { reset(); }
     StackStorage(const StackStorage&) = delete;
-    StackStorage(StackStorage&& other) noexcept {
-      transferOwnership(other);
-    };
+    StackStorage(StackStorage&& other) noexcept { transferOwnership(other); };
     StackStorage& operator=(const StackStorage&) = delete;
     StackStorage& operator=(StackStorage&& other) noexcept {
       if (this == &other) {
