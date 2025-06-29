@@ -73,8 +73,9 @@ jobs:
           git rebase --strategy-option=theirs origin/main
           git push
 
-  deploy-code-report:
-    needs: [gcov, clang-format]
+  deploy-gcov-report:
+    needs: gcov
+    name: Deploy code coverage report to GitHub Pages
     concurrency:
       group: "pages"
       cancel-in-progress: false
@@ -84,7 +85,7 @@ jobs:
       id-token: write
     environment:
       name: github-pages
-      url: ${{ steps.deployment.outputs.page_url }}
+      url: ${{ steps.deployment.outputs.page_url }}/coverage/coverage.html
     runs-on: ubuntu-latest
     steps:
       - name: Checkout
@@ -110,7 +111,7 @@ jobs:
       - name: Install dependencies
         run: sudo apt-get update && sudo apt-get install -y cmake gcc g++ catch2
       - name: Configure
-        run: cmake -S . -B build -DCMAKE_CXX_COMPILER=g++ -DCMAKE_BUILD_TYPE=Debug -DCMAKE_CXX_FLAGS="-fsanitize=address,undefined -fno-omit-frame-pointer"
+        run: cmake -S . -B build -DCMAKE_CXX_COMPILER=g++ -DCMAKE_BUILD_TYPE=Debug -DCMAKE_CXX_FLAGS="-fsanitize=address,undefined,thread -fno-omit-frame-pointer"
       - name: Build
         run: cmake --build build
       - name: Test
@@ -141,7 +142,7 @@ jobs:
       - name: Install dependencies
         run: sudo apt-get update && sudo apt-get install -y cmake clang g++ catch2
       - name: Configure
-        run: cmake -S . -B build -DCMAKE_CXX_COMPILER=clang++ -DCMAKE_BUILD_TYPE=Debug -DCMAKE_CXX_FLAGS="-fsanitize=address,undefined -fno-omit-frame-pointer"
+        run: cmake -S . -B build -DCMAKE_CXX_COMPILER=clang++ -DCMAKE_BUILD_TYPE=Debug -DCMAKE_CXX_FLAGS="-fsanitize=address,undefined,thread -fno-omit-frame-pointer"
       - name: Build
         run: cmake --build build
       - name: Test
