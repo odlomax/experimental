@@ -19,8 +19,6 @@ jobs:
       contents: write
     steps:
       - uses: actions/checkout@v3
-        with:
-          token: ${{ secrets.GITHUB_TOKEN }}
       - name: Install dependencies
         run: sudo apt-get update && sudo apt-get install -y clang-format
       - name: Format source files
@@ -104,8 +102,6 @@ jobs:
     needs: clang-format
     runs-on: ubuntu-latest
     name: Build and test with GCC (Debug)
-    permissions:
-      contents: write
     steps:
       - uses: actions/checkout@v3
       - name: Install dependencies
@@ -131,7 +127,6 @@ jobs:
         run: cmake --build build
       - name: Test
         run: cd build && ctest --output-on-failure
-
 
   build-clang-debug:
     needs: clang-format
