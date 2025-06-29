@@ -12,7 +12,33 @@ on:
     paths-ignore: 
       - 'docs/**'
 jobs:
-  build-gcc-with-gcov:
+  clang-format:
+    runs-on: ubuntu-latest
+    name: Format code with clang-format and commit changes
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@v3
+        with:
+          token: ${{ secrets.GITHUB_TOKEN }}
+      - name: Install dependencies
+        run: sudo apt-get update && sudo apt-get install -y clang-format
+      - name: Format source files
+        run: find . -name '*.cpp' -o -name '*.hpp' | xargs clang-format -i
+      - name: Commit and push changes
+        env: 
+          CI_COMMIT_MESSAGE: Apply clang-format.
+          CI_COMMIT_AUTHOR: CI Bot
+        run: |
+          git config --global user.name "${{ env.CI_COMMIT_AUTHOR }}"
+          git config --global user.email "odlomax@users.noreply.github.com"
+          git add .
+          if ! git diff --cached --quiet; then
+            git commit -m "${{ env.CI_COMMIT_MESSAGE }}"
+            git push
+          fi
+  gcov:
+    needs: clang-format
     runs-on: ubuntu-latest
     name: Code coverage with gcov
     permissions:
@@ -33,7 +59,7 @@ jobs:
           gcovr --root .. --filter ../src --filter ../include --html-details coverage.html --html-theme github.dark-green
       - name: Commit and push code coverage report
         env: 
-          CI_COMMIT_MESSAGE: Add code coverage artifacts.
+          CI_COMMIT_MESSAGE: Add code coverage report.
           CI_COMMIT_AUTHOR: CI Bot
         run: |
           mkdir -p docs/coverage
@@ -48,6 +74,7 @@ jobs:
           git push
 
   build-gcc-debug:
+    needs: clang-format
     runs-on: ubuntu-latest
     name: Build and test with GCC (Debug)
     permissions:
@@ -64,6 +91,7 @@ jobs:
         run: cd build && ctest --output-on-failure
 
   build-gcc-release:
+    needs: clang-format
     runs-on: ubuntu-latest
     name: Build and test with GCC (Release)
     steps:
@@ -79,6 +107,7 @@ jobs:
 
 
   build-clang-debug:
+    needs: clang-format
     runs-on: ubuntu-latest
     name: Build and test with Clang (Debug)
     steps:
@@ -93,6 +122,7 @@ jobs:
         run: cd build && ctest --output-on-failure
 
   build-clang-release:
+    needs: clang-format
     runs-on: ubuntu-latest
     name: Build and test with Clang (Release)
     steps:

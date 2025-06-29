@@ -38,7 +38,7 @@ class Function<Return(Args...)> {
 
  private:
   class CallableBase {
-   public:
+    public:
     explicit CallableBase() = default;
     explicit CallableBase(const CallableBase&) = default;
     explicit CallableBase(CallableBase&&) = default;
