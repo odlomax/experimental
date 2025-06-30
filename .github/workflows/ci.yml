@@ -4,13 +4,9 @@ on:
   push:
     branches:
       - main
-    paths-ignore: 
-      - 'docs/**'
   pull_request:
     branches:
       - main
-    paths-ignore: 
-      - 'docs/**'
 jobs:
   clang-format:
     runs-on: ubuntu-latest
@@ -25,7 +21,7 @@ jobs:
         run: find . -name '*.cpp' -o -name '*.hpp' | xargs clang-format -i -style=file
       - name: Commit and push changes
         env: 
-          CI_COMMIT_MESSAGE: Apply clang-format.
+          CI_COMMIT_MESSAGE: Apply clang-format. [skip ci]
           CI_COMMIT_AUTHOR: CI Bot
         run: |
           git config --global user.name "${{ env.CI_COMMIT_AUTHOR }}"
@@ -57,7 +53,7 @@ jobs:
           gcovr --root .. --filter ../src --filter ../include --html-details coverage.html --html-theme github.dark-green
       - name: Commit and push code coverage report
         env: 
-          CI_COMMIT_MESSAGE: Add code coverage report.
+          CI_COMMIT_MESSAGE: Add code coverage report. [skip ci]
           CI_COMMIT_AUTHOR: CI Bot
         run: |
           mkdir -p docs/coverage
